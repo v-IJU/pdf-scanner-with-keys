@@ -177,6 +177,58 @@ See the `LICENSE` file for more information.
 
 ---
 
+## 🔄 Updating to a New Version
+
+When you update this package to a newer version, follow the steps below to ensure everything works correctly.
+
+---
+
+### 1️⃣ Update the Package Code
+
+Update the package using Composer:
+
+```bash
+composer update dhina-technologies/pdf-scanner-with-keys
+```
+
+**Effect:**
+This replaces the old **Controller** and **Service** logic inside the `vendor` folder with the latest version from the package.
+
+---
+
+### 2️⃣ Update Assets (Views & Config)
+
+Laravel publishes the test UI and configuration files only once during the first install. These files **do not update automatically**.
+
+Force overwrite them using:
+
+```bash
+php artisan vendor:publish --tag="pdf-scanner-assets" --force
+```
+
+**Effect:**
+
+- Replaces `resources/views/vendor/pdf-scanner/test-ui.blade.php`
+- Replaces `config/pdf-scanner.php`
+
+⚠️ **Warning:**
+This will overwrite any manual changes made to these specific files.
+
+---
+
+### 3️⃣ Clear System Cache
+
+Clear Laravel caches to ensure new routes and configuration are loaded:
+
+```bash
+php artisan optimize:clear
+```
+
+**Effect:**
+Clears route, config, and view caches so the application immediately uses the updated version.
+
+---
+
 ## ⭐ Support
 
 If this package helps you, please consider giving it a ⭐ on Packagist or GitHub.
