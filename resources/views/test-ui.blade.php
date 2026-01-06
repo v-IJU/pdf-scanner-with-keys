@@ -29,7 +29,7 @@
                             <div class="form-text">Type exactly what appears in the PDF.</div>
                         </div>
                     </div>
-                    <button type="submit" class="btn btn-primary px-4">Analyze Document</button>
+                    <button type="submit" class="btn btn-primary px-4">Analyze PDF</button>
                 </form>
             </div>
         </div>
