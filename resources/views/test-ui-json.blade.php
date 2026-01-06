@@ -109,12 +109,46 @@
                                     <input type="file" name="pdf" class="form-control form-control-lg" required>
                                 </div>
 
-                                <div class="col-md-6">
+                                {{-- <div class="col-md-6">
                                     <label class="form-label fw-bold">2. Target Fields</label>
-                                    <input type="text" name="custom_keys" class="form-control form-control-lg"
-                                        placeholder="PAN, TAN, Name, Date"
-                                        value="{{ request('custom_keys') ?? 'PAN, TAN, Name, Date' }}">
-                                    <small class="text-muted">Comma separated field names</small>
+
+                                    <div class="form-control form-control-lg d-flex flex-wrap gap-2" id="tags-input">
+                                        <!-- Tags will appear here -->
+                                        <input type="text" id="tag-input" class="border-0 flex-grow-1"
+                                            placeholder="Type field and press Enter" style="outline: none;">
+                                    </div>
+
+                                    <!-- Hidden inputs (array submission) -->
+                                    <div id="tags-hidden"></div>
+
+                                    <small class="text-muted">Press Enter or comma to add field</small>
+                                </div> --}}
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">2. Target Fields / Presets</label>
+
+                                    <!-- Presets -->
+                                    <div id="preset-buttons" class="mb-2">
+                                        @foreach (config('pdf-scanner.presets') as $preset => $fields)
+                                            <button type="button"
+                                                class="btn btn-outline-secondary btn-sm me-1 mb-1 preset-btn"
+                                                data-preset="{{ $preset }}">
+                                                {{ ucfirst($preset) }}
+                                            </button>
+                                        @endforeach
+                                    </div>
+
+                                    <!-- Tags Input -->
+                                    <div class="form-control form-control-lg d-flex flex-wrap gap-2" id="tags-input">
+                                        <input type="text" id="tag-input" class="border-0 flex-grow-1"
+                                            placeholder="Type field and press Enter" style="outline:none;">
+                                    </div>
+
+                                    <!-- Hidden inputs -->
+                                    <div id="tags-hidden"></div>
+
+                                    <small class="text-muted">Click preset or type fields manually. Press Enter or comma
+                                        to add field.</small>
                                 </div>
 
                                 <div class="col-12 text-end">
@@ -156,13 +190,13 @@
                                                         </td>
 
                                                         <td class="py-3">
-                                                            @if (true)
+                                                            @if ($item['found'])
                                                                 <div class="fw-bold text-dark">
                                                                     {{ $item['value'] }}
                                                                 </div>
                                                                 <small class="text-success">
                                                                     Confidence:
-                                                                    {{ number_format($item['confidence'] * 100, 1) }}%
+                                                                    {{ number_format(@$item['confidence'] * 100, 1) }}%
                                                                 </small>
                                                             @else
                                                                 <span class="text-danger fw-semibold">Not Found</span>
@@ -195,7 +229,138 @@
             </div>
         </div>
     </div>
+    {{-- <script>
+        const tagInput = document.getElementById('tag-input');
+        const tagsContainer = document.getElementById('tags-input');
+        const hiddenContainer = document.getElementById('tags-hidden');
 
+        const initialTags = @json($keys ?? []);
+
+        let tags = initialTags.length ?
+            initialTags : ['PAN', 'TAN', 'Name', 'Date'];
+
+        //let tags = ['PAN', 'TAN', 'Name', 'Date'];
+
+        function renderTags() {
+            tagsContainer.querySelectorAll('.badge').forEach(e => e.remove());
+            hiddenContainer.innerHTML = '';
+
+            tags.forEach((tag, index) => {
+                // Badge
+                const badge = document.createElement('span');
+                badge.className = 'badge bg-primary px-3 py-2';
+                badge.innerHTML = `
+                ${tag}
+                <span style="cursor:pointer;margin-left:8px;" data-index="${index}">&times;</span>
+            `;
+                tagsContainer.insertBefore(badge, tagInput);
+
+                // Hidden input
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'custom_keys[]';
+                input.value = tag;
+                hiddenContainer.appendChild(input);
+            });
+        }
+
+        tagInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ',') {
+                e.preventDefault();
+                const value = tagInput.value.trim();
+
+                if (value && !tags.includes(value)) {
+                    tags.push(value);
+                    renderTags();
+                }
+                tagInput.value = '';
+            }
+        });
+
+        tagsContainer.addEventListener('click', function(e) {
+            if (e.target.dataset.index !== undefined) {
+                tags.splice(e.target.dataset.index, 1);
+                renderTags();
+            }
+        });
+
+        renderTags();
+    </script> --}}
+    <script>
+        const tagInput = document.getElementById('tag-input');
+        const tagsContainer = document.getElementById('tags-input');
+        const hiddenContainer = document.getElementById('tags-hidden');
+
+        let tags = []; // { type: 'custom'|'preset', value: 'PAN' }
+
+        function renderTags() {
+            // Clear badges
+            tagsContainer.querySelectorAll('.badge').forEach(e => e.remove());
+            hiddenContainer.innerHTML = '';
+
+            tags.forEach((tag, index) => {
+                const badge = document.createElement('span');
+                badge.className = tag.type === 'preset' ? 'badge bg-success px-3 py-2' :
+                    'badge bg-primary px-3 py-2';
+                badge.innerHTML = `
+            ${tag.value}
+            <span style="cursor:pointer;margin-left:8px;" data-index="${index}">&times;</span>
+        `;
+                tagsContainer.insertBefore(badge, tagInput);
+
+                // Hidden input for submission
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'custom_keys[]';
+                input.value = tag.value;
+                hiddenContainer.appendChild(input);
+            });
+        }
+
+        // Handle manual input
+        tagInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ',') {
+                e.preventDefault();
+                const value = tagInput.value.trim();
+                if (value && !tags.find(t => t.value === value)) {
+                    tags.push({
+                        type: 'custom',
+                        value
+                    });
+                    renderTags();
+                }
+                tagInput.value = '';
+            }
+        });
+
+        // Remove tag
+        tagsContainer.addEventListener('click', function(e) {
+            if (e.target.dataset.index !== undefined) {
+                tags.splice(e.target.dataset.index, 1);
+                renderTags();
+            }
+        });
+
+        // Handle preset button clicks
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const preset = btn.dataset.preset;
+                if (!tags.find(t => t.value === preset)) {
+                    tags.push({
+                        type: 'preset',
+                        value: preset
+                    });
+                    renderTags();
+                }
+            });
+        });
+
+        // Initialize if you want previously selected keys
+        @isset($keys)
+            tags = @json(array_map(fn($v) => ['type' => 'custom', 'value' => $v], $keys));
+            renderTags();
+        @endisset
+    </script>
 </body>
 
 </html>

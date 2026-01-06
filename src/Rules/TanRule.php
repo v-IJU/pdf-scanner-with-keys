@@ -1,25 +1,22 @@
 <?php
+
 namespace Dtech\PdfScanner\Rules;
 
-use Dtech\PdfScanner\DTO\ExtractedField;
-
-class TanRule implements RuleContract
+class TanRule extends BaseRule implements ExtractionRule
 {
-    public function key(): string
+    public function supports(string $field): bool
     {
-        return 'TAN';
+        return str_contains(strtolower($field), 'tan');
     }
 
-    public function apply(string $text): ExtractedField
+    public function extract(string $text, string $field): array
     {
-        $clean = strtoupper($text);
-        $clean = preg_replace('/[^A-Z0-9]/', '', $clean);
-        $clean = preg_replace('/X+/', '', $clean);
+        preg_match_all('/\b[A-Z]{4}[0-9]{5}[A-Z]\b/', $text, $m);
 
-        if (preg_match('/[A-Z]{4}[0-9]{5}[A-Z]/', $clean, $match)) {
-            return ExtractedField::found($match[0], 0.94);
+        if (!empty($m[0])) {
+            return $this->found($m[0][0], 0.94);
         }
 
-        return ExtractedField::notFound();
+        return $this->notFound();
     }
 }
