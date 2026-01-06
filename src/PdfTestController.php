@@ -20,22 +20,31 @@ class PdfTestController extends Controller
         ]);
 
         // Convert "PAN, TAN, Name" into ['PAN' => ['PAN'], 'TAN' => ['TAN']...]
-        $inputKeys = explode(',', $request->input('custom_keys'));
-        $mapping = [];
+        $keys = collect(explode(',', $request->custom_keys))
+            ->map(fn($v) => trim($v))
+            ->filter()
+            ->values()
+            ->toArray();
 
-        foreach ($inputKeys as $key) {
-            $trimmedKey = trim($key);
-            if (!empty($trimmedKey)) {
-                // We use the same name as the key and the search term
-                $mapping[$trimmedKey] = [$trimmedKey];
-            }
-        }
+        $result = PdfScanner::extractJson(
+            $request->file('pdf')->getRealPath(),
+            $keys
+        );
 
-        $result = PdfScanner::extract($request->file('pdf')->getRealPath(), $mapping);
+        // dd($result);
+        // $result = PdfScanner::extract($request->file('pdf')->getRealPath(), $keys);
 
-        return view('pdf-scanner::test-ui', [
-            'data' => $result['data'],
-            'raw_text' => $result['raw_text']
+        // return view('pdf-scanner::test-ui', [
+        //     'data' => $result['data'],
+        //     'raw_text' => $result['raw_text']
+        // ]);
+
+        //dd($result['data']);
+
+
+        return view('pdf-scanner::test-ui-json', [
+            'data' => $result['data'],      // ✅ structured JSON
+            'raw_text' => $result['raw_text'] // ✅ debug text
         ]);
     }
 }
