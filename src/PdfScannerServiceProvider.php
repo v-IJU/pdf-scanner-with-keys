@@ -51,6 +51,11 @@ class PdfScannerServiceProvider extends ServiceProvider
         RuleRegistry::register(new Rules\EmailRule());
         RuleRegistry::register(new Rules\InvoiceNoRule());
         RuleRegistry::register(new Rules\InvoiceDateRule());
+        RuleRegistry::register(new Rules\AadhaarRule());
+        RuleRegistry::register(new Rules\AccountRule());
+        RuleRegistry::register(new Rules\GstinRule());
+        RuleRegistry::register(new Rules\IfscRule());
+        RuleRegistry::register(new Rules\PhoneRule());
     }
 
     /**

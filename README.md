@@ -104,12 +104,22 @@ Open in browser:
 http://localhost:8000/test-package
 ```
 
+Supports:
+
+File upload
+
+Tag‑based field selection
+
+Preset selection
+
+JSON output view
+
 Upload a PDF and enter comma-separated keys.
 
 Example:
 
 ```
-PAN, TAN, Assessment Year
+PAN, TAN, Assessment Year or Select Preset
 ```
 
 ---
@@ -120,16 +130,16 @@ You can use the scanner programmatically in controllers or services.
 
 ```php
 use Dtech\PdfScanner\PdfScanner;
+use Dtech\PdfScanner\PresetResolver;
 
 $filePath = storage_path('app/pdfs/itr_form.pdf');
 
-$rules = [
-    'pan_number'      => ['PAN of the Deductor', 'Permanent Account Number'],
-    'assessment_year' => ['Assessment Year'],
-    'employer'        => ['Name and address of the Employer'],
-];
+//what are the keys you need to extract from UI here preset also come and if you need some Random Key output you can mention here
+$keys = $request->custom_keys ? $request->custom_keys : [];
 
-$result = PdfScanner::extract($filePath, $rules);
+$keys = PresetResolver::resolve($keys);
+
+$result = PdfScanner::extractJson($filePath, $keys);
 
 print_r($result['data']);
 
@@ -167,6 +177,82 @@ Ideal for:
     'raw_text' => 'Full extracted PDF text...'
 ]
 ```
+
+## 🧩 Rule System (Core Feature)
+
+Each field uses a Rule Class.
+
+Rule Interface
+
+```
+<?php
+
+namespace Dtech\PdfScanner\Rules;
+
+interface ExtractionRule
+{
+    /**
+     * Check if this rule supports the given field
+     */
+    public function supports(string $field): bool;
+
+    /**
+     * Extract value from text
+     */
+    public function extract(string $text, string $field): array;
+}
+
+
+```
+
+## Example: PAN Rule
+
+```
+
+<?php
+
+namespace Dtech\PdfScanner\Rules;
+
+class PanRule extends BaseRule implements ExtractionRule
+{
+    public function supports(string $field): bool
+    {
+        return str_contains(strtolower($field), 'pan');
+    }
+
+    public function extract(string $text, string $field): array
+    {
+        preg_match_all('/\b[A-Z]{5}[0-9]{4}[A-Z]\b/', $text, $m);
+
+        if (!empty($m[0])) {
+            return $this->found($m[0][0], 0.95);
+        }
+
+        return $this->notFound();
+    }
+}
+
+
+```
+
+## 🤝 Contributor Guide
+
+Create new Rule in src/Rules
+
+Implement RuleInterface
+
+Register rule in RuleRegistry
+
+```
+PdfScannerServiceProvider.php
+
+Update Rule Registory
+
+```
+
+Add preset mapping if needed
+
+No core modification required.
 
 ---
 

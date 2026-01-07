@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dtech | Intelligent PDF Scanner</title>
+    <title>Intelligent PDF Scanner</title>
 
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -88,7 +88,7 @@
     <!-- Hero -->
     <div class="hero-section">
         <div class="container text-center">
-            <h1 class="fw-bold">Dtech PDF Intelligence</h1>
+            <h1 class="fw-bold">PDF Intelligence</h1>
             <p class="opacity-75">Upload documents and extract structured key-value data</p>
         </div>
     </div>
