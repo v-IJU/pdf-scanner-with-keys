@@ -16,8 +16,10 @@ class PdfTestController extends Controller
     {
         $request->validate([
             'pdf' => 'required|mimes:pdf',
-            'custom_keys' => 'required|array',
-            'custom_keys.*' => 'string'
+            'custom_keys' => 'nullable|array',
+            'custom_keys.*' => 'string',
+            'table_columns' => 'nullable|array',
+            'table_columns.*' => 'string',
         ]);
 
         // Convert "PAN, TAN, Name" into ['PAN' => ['PAN'], 'TAN' => ['TAN']...]
@@ -25,18 +27,36 @@ class PdfTestController extends Controller
 
         $keys = PresetResolver::resolve($keys);
 
-       // dd($keys);
+        // for tables
+
+        $tables = collect($request->input('tables', []))
+            ->mapWithKeys(function ($table) {
+                return [
+                    $table['name'] => array_map(
+                        'trim',
+                        explode(',', $table['columns'])
+                    )
+                ];
+            })
+            ->toArray();
+
+        // dd($tables);
 
         $result = PdfScanner::extractJson(
             $request->file('pdf')->getRealPath(),
-            $keys
+            $keys,
+            $tables
         );
 
+
+       // dd($result['tables']);
 
         return view('pdf-scanner::test-ui-json', [
             'data' => $result['data'],      // ✅ structured JSON
             'raw_text' => $result['raw_text'], // ✅ debug text
-            'keys' => $keys
+            'tables' => $result['tables'] ?? [],
+            'keys' => $keys ?? [],
+            "table_keys" => $request->table_columns ?? []
         ]);
     }
 }

@@ -8,6 +8,7 @@ use Dtech\PdfScanner\Services\TextExtractor;
 use Dtech\PdfScanner\Services\TextNormalizer;
 use Spatie\PdfToText\Pdf;
 use Dtech\PdfScanner\RuleRegistry;
+use Dtech\PdfScanner\Table\TableExtractor;
 use Exception;
 use Smalot\PdfParser\Parser;
 
@@ -19,7 +20,7 @@ class PdfScanner
     }
 
 
-    public static function extractJson(string $filePath, array $fields): array
+    public static function extractJson(string $filePath, array $fields, array $tableColumns = []): array
     {
         $parser = new Parser();
         $text = trim($parser->parseFile($filePath)->getText());
@@ -32,9 +33,52 @@ class PdfScanner
             $data[$field] = self::applyRules($text, $field);
         }
 
+        // -----------------------------
+        // 2️⃣ Table Extraction
+        // -----------------------------
+        $extractedTables = [];
+
+        
+
+        foreach ($tableColumns as $tableName => $columns) {
+
+            if (empty($columns) || !is_array($columns)) {
+                continue;
+            }
+
+            $rows = TableExtractor::extractAll($text, $columns);
+           
+            //dd($columns);
+            
+           
+
+            if (!empty($rows)) {
+                $extractedTables[$tableName] = self::mapTable($rows, $columns);
+            }
+        }
+
+        //dd($tableColumns);
+        // if (true) {
+
+        //     $rows = TableExtractor::extract(
+        //         $text,
+        //         $tableColumns
+        //     );
+
+        //     //dd($rows);
+
+        //     $tables['table'] = self::mapTable(
+        //         $rows,
+        //         $tableColumns
+        //     );
+        // }
+
+       // dd($extractedTables);
+
         return [
             'data' => $data,
-            'raw_text' => $text
+            'raw_text' => $text,
+            "tables" => $extractedTables
         ];
     }
 
@@ -42,7 +86,7 @@ class PdfScanner
     {
         foreach (RuleRegistry::all() as $rule) {
 
-             //dd($rule);
+            //dd($rule);
 
             if ($rule->supports($field)) {
                 $result = $rule->extract($text, $field);
@@ -65,6 +109,23 @@ class PdfScanner
     public static function preset(string $name): array
     {
         return config("pdf-scanner.presets.$name", []);
+    }
+
+    protected static function mapTable(array $rows, array $keys): array
+    {
+        $data = [];
+
+        foreach ($rows as $row) {
+            $entry = [];
+
+            foreach ($keys as $i => $key) {
+                $entry[$key] = $row[$i] ?? null;
+            }
+
+            $data[] = $entry;
+        }
+
+        return $data;
     }
 
     private static function applyRulesOld(string $text, string $field): array

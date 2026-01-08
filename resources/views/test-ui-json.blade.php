@@ -151,6 +151,38 @@
                                         to add field.</small>
                                 </div>
 
+                                {{-- <div class="col-md-6">
+                                    <label class="form-label fw-bold">3. Table Columns (Optional)</label>
+
+                                    <div class="form-control form-control-lg d-flex flex-wrap gap-2"
+                                        id="table-tags-input">
+                                        <input type="text" id="table-tag-input" class="border-0 flex-grow-1"
+                                            placeholder="Item" style="outline:none;">
+                                    </div>
+
+                                    <div id="table-tags-hidden"></div>
+
+                                    <small class="text-muted">
+                                        Used for invoice / statement tables
+                                    </small>
+                                </div> --}}
+
+                                <div class="col-12">
+                                    <label class="form-label fw-bold">3. Tables (Optional)</label>
+
+                                    <div id="tables-container"></div>
+
+                                    <button type="button" class="btn btn-outline-secondary btn-sm mt-2"
+                                        id="add-table-btn">
+                                        + Add Table
+                                    </button>
+
+                                    <small class="text-muted d-block mt-1">
+                                        Define table name and columns (comma separated)
+                                    </small>
+                                </div>
+
+
                                 <div class="col-12 text-end">
                                     <button type="submit" class="btn btn-primary px-5">
                                         Analyze Document
@@ -162,9 +194,9 @@
                 </div>
 
                 {{-- Results --}}
-                @if (!empty($data))
-                    <div class="row g-4">
 
+                <div class="row g-4">
+                    @if (!empty($data))
                         <!-- Extracted Data -->
                         <div class="col-lg-5">
                             <div class="card main-card h-100">
@@ -210,21 +242,81 @@
                                 </div>
                             </div>
                         </div>
+                    @endif
+                    <!-- Raw Text -->
 
-                        <!-- Raw Text -->
+                    @if (@$raw_text)
                         <div class="col-lg-7">
                             <div class="card main-card h-100 bg-dark">
                                 <div class="card-header bg-transparent border-0 py-3">
                                     <h5 class="mb-0 text-white fw-bold">PDF Raw Text (Debug)</h5>
                                 </div>
                                 <div class="card-body p-0">
-                                    <pre class="m-0 p-4 raw-text-container" style="height: 500px; overflow-y: auto;">{{ $raw_text }}</pre>
+                                    <pre class="m-0 p-4 raw-text-container" style="height: 500px; overflow-y: auto;">{{ @$raw_text }}</pre>
                                 </div>
                             </div>
                         </div>
+                    @endif
+                </div>
 
-                    </div>
+                {{-- {{ dd($tables) }} --}}
+                @if (!empty($tables))
+                    @foreach ($tables as $tableName => $rows)
+                        <div class="card main-card mt-4">
+
+                            {{-- Header --}}
+                            <div
+                                class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+                                <h5 class="fw-bold mb-0">
+                                    {{ ucwords(str_replace('_', ' ', $tableName)) }}
+                                </h5>
+
+
+                            </div>
+
+                            {{-- Body --}}
+                            <div class="card-body p-0">
+                                @if (empty($rows))
+                                    <div class="p-4 text-muted text-center">
+                                        No rows detected for this table
+                                    </div>
+                                @else
+                                    <div class="table-responsive">
+                                        <table class="table table-striped mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    @foreach (array_keys(reset($rows)) as $header)
+                                                        <th>{{ ucfirst(str_replace('_', ' ', $header)) }}</th>
+                                                    @endforeach
+                                                </tr>
+                                            </thead>
+
+                                            <tbody>
+                                                @foreach ($rows[0] as $row)
+                                                    <tr>
+                                                        @foreach ($row as $value)
+                                                            <td>{{ $value }}</td>
+                                                        @endforeach
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                @endif
+                            </div>
+
+                            {{-- Footer (future-ready) --}}
+                            <div class="card-footer bg-white border-0 text-end">
+                                <button class="btn btn-sm btn-outline-primary" disabled>
+                                    Export CSV
+                                </button>
+                            </div>
+
+                        </div>
+                    @endforeach
                 @endif
+
+
 
             </div>
         </div>
@@ -361,6 +453,114 @@
             renderTags();
         @endisset
     </script>
+
+    <script>
+        const tableInput = document.getElementById('table-tag-input');
+        const tableContainer = document.getElementById('table-tags-input');
+        const tableHidden = document.getElementById('table-tags-hidden');
+
+        let tableTags = [];
+
+        function renderTableTags() {
+            tableContainer.querySelectorAll('.badge').forEach(e => e.remove());
+            tableHidden.innerHTML = '';
+
+            tableTags.forEach((tag, index) => {
+                const badge = document.createElement('span');
+                badge.className = 'badge bg-warning text-dark px-3 py-2';
+                badge.innerHTML = `
+                ${tag}
+                <span style="cursor:pointer;margin-left:8px;" data-index="${index}">&times;</span>
+            `;
+                tableContainer.insertBefore(badge, tableInput);
+
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'table_columns[]';
+                input.value = tag;
+                tableHidden.appendChild(input);
+            });
+        }
+
+        tableInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ',') {
+                e.preventDefault();
+                const value = tableInput.value.trim();
+                if (value && !tableTags.includes(value)) {
+                    tableTags.push(value);
+                    renderTableTags();
+                }
+                tableInput.value = '';
+            }
+        });
+
+        tableContainer.addEventListener('click', function(e) {
+            if (e.target.dataset.index !== undefined) {
+                tableTags.splice(e.target.dataset.index, 1);
+                renderTableTags();
+            }
+        });
+
+        @isset($table_keys)
+            tableTags = @json($table_keys);
+
+            console.log(tableTags);
+            renderTableTags();
+        @endisset
+    </script>
+
+    <script>
+        let tableIndex = 0;
+
+        document.getElementById('add-table-btn').addEventListener('click', () => {
+            addTableBlock();
+        });
+
+        function addTableBlock(name = '', columns = '') {
+            const container = document.getElementById('tables-container');
+
+            const block = document.createElement('div');
+            block.className = 'card mt-3 p-3 border';
+            block.dataset.index = tableIndex;
+
+            block.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <strong>Table ${tableIndex + 1}</strong>
+            <button type="button" class="btn btn-sm btn-outline-danger remove-table">Remove</button>
+        </div>
+
+        <div class="row g-2">
+            <div class="col-md-4">
+                <input type="text"
+                    name="tables[${tableIndex}][name]"
+                    class="form-control"
+                    placeholder="Table name (e.g. invoice_items)"
+                    value="${name}"
+                    required>
+            </div>
+
+            <div class="col-md-8">
+                <input type="text"
+                    name="tables[${tableIndex}][columns]"
+                    class="form-control"
+                    placeholder="Columns (Item, Qty, Rate, Amount)"
+                    value="${columns}"
+                    required>
+            </div>
+        </div>
+    `;
+
+            container.appendChild(block);
+
+            block.querySelector('.remove-table').addEventListener('click', () => {
+                block.remove();
+            });
+
+            tableIndex++;
+        }
+    </script>
+
+
 </body>
 
 </html>

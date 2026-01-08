@@ -67,6 +67,6 @@ return [
         ],
 
     ],
-
+    'pdftotext_options' => '-layout',
 
 ];
